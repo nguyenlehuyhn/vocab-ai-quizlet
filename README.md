@@ -1,6 +1,6 @@
 # Vocab AI Quizlet
 
-Mobile-first vocabulary web app for English learners. Users sign in with Google, generate Vietnamese meanings and English examples with AI, save vocabulary to Supabase, browse saved words, and copy Quizlet import text.
+Mobile-first vocabulary web app for English learners. Users sign in with Google, generate Vietnamese meanings and English examples with AI, save vocabulary to Supabase, browse saved words, star important words, delete old words, and copy Quizlet import text.
 
 ## Tech Stack
 
@@ -51,6 +51,18 @@ Mobile-first vocabulary web app for English learners. Users sign in with Google,
 - `/app/export` exports filtered words in Quizlet import format.
 - `/app/settings` shows account settings and sign out.
 
+## Vocabulary Dashboard
+
+The dashboard supports:
+
+- Search across English word, Vietnamese meaning, and English example.
+- Simple filters: Today, This week, This month, All, and Starred.
+- Star action for marking important words.
+- Delete action for removing words after confirmation.
+- A horizontally scrollable table on small screens.
+
+Duplicate prevention is enforced per user. Words are normalized by trimming spaces and comparing case-insensitively, so `hello`, `Hello`, and ` HELLO ` count as the same word.
+
 ## iPhone Home Screen Quick Add
 
 For a fast daily capture flow:
@@ -59,6 +71,8 @@ For a fast daily capture flow:
 2. Tap Share.
 3. Tap Add to Home Screen.
 4. Use that home screen shortcut whenever you want to add a word quickly.
+
+Quick Add is optimized for rapid entry. When you tap Add word, the input clears immediately and the word appears in a pending list while AI generation continues. Each pending word updates to Saved, Already exists, or Failed. Failed items include a Retry button.
 
 ## Environment Variables
 
@@ -87,9 +101,16 @@ OPENAI_API_KEY=
 
 The migration creates `vocab_items`, enables Row Level Security, and adds policies so users can only select, insert, update, and delete their own rows.
 
+The second migration adds duplicate prevention and starred words:
+
+- `normalized_word` stores the trimmed lowercase word.
+- `is_starred` stores starred status.
+- A unique index on `user_id` and `normalized_word` prevents future duplicates.
+- Existing duplicates are cleaned by keeping the oldest row for each user and normalized word before creating the unique index.
+
 ## Quizlet Export
 
-Go to `/app/export` after saving words. Choose a date filter, then copy the generated text:
+Go to `/app/export` after saving words. Choose Today, This week, This month, All, or Starred, then copy the generated text:
 
 ```text
 term<TAB>definition

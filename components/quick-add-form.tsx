@@ -3,49 +3,84 @@
 import Link from "next/link";
 import { FormEvent, useRef, useState } from "react";
 
+type PendingStatus = "generating" | "saved" | "duplicate" | "failed";
+
+type PendingWord = {
+  id: string;
+  word: string;
+  status: PendingStatus;
+  message: string;
+};
+
+function statusLabel(status: PendingStatus) {
+  if (status === "generating") return "Generating...";
+  if (status === "saved") return "Saved";
+  if (status === "duplicate") return "Already exists";
+  return "Failed";
+}
+
+function statusClass(status: PendingStatus) {
+  if (status === "saved") return "bg-emerald-50 text-emerald-700";
+  if (status === "duplicate") return "bg-amber-50 text-amber-700";
+  if (status === "failed") return "bg-red-50 text-red-700";
+  return "bg-slate-100 text-slate-600";
+}
+
 export function QuickAddForm() {
   const inputRef = useRef<HTMLInputElement>(null);
   const [word, setWord] = useState("");
-  const [error, setError] = useState("");
-  const [savedWord, setSavedWord] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const [pendingWords, setPendingWords] = useState<PendingWord[]>([]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setError("");
-    setSavedWord("");
 
     const trimmed = word.trim();
     if (!trimmed) {
-      setError("Enter one English word or phrase.");
       return;
     }
 
-    setIsLoading(true);
+    const id = crypto.randomUUID();
+    setWord("");
+    setPendingWords((currentWords) => [
+      { id, word: trimmed, status: "generating", message: "Generating..." },
+      ...currentWords
+    ]);
+    inputRef.current?.focus();
 
+    void submitWord(id, trimmed);
+  }
+
+  async function submitWord(id: string, submittedWord: string) {
     const response = await fetch("/api/vocab/generate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ word: trimmed })
-    });
+      body: JSON.stringify({ word: submittedWord })
+    }).catch(() => null);
 
-    const payload = await response.json();
-    setIsLoading(false);
-
-    if (!response.ok) {
-      setError(payload.error ?? "Something went wrong. Please try again.");
+    if (!response) {
+      updatePendingWord(id, "failed", "Network error.");
       return;
     }
 
-    setWord("");
-    setSavedWord(payload.item.word);
+    const payload = await response.json().catch(() => null);
+
+    if (payload?.status === "success") {
+      updatePendingWord(id, "saved", "Saved");
+      return;
+    }
+
+    if (payload?.status === "duplicate") {
+      updatePendingWord(id, "duplicate", "Already exists");
+      return;
+    }
+
+    updatePendingWord(id, "failed", payload?.message ?? payload?.error ?? "Failed");
   }
 
-  function addAnother() {
-    setError("");
-    setSavedWord("");
-    setWord("");
-    inputRef.current?.focus();
+  function updatePendingWord(id: string, status: PendingStatus, message: string) {
+    setPendingWords((currentWords) =>
+      currentWords.map((pendingWord) => (pendingWord.id === id ? { ...pendingWord, status, message } : pendingWord))
+    );
   }
 
   return (
@@ -56,7 +91,6 @@ export function QuickAddForm() {
           autoCapitalize="none"
           autoComplete="off"
           className="w-full rounded-3xl border border-slate-200 bg-white px-5 py-6 text-2xl font-bold text-slate-950 shadow-sm outline-none ring-teal-600/20 placeholder:text-slate-400 focus:border-teal-600 focus:ring-4"
-          disabled={isLoading}
           maxLength={80}
           placeholder="English word"
           value={word}
@@ -64,21 +98,40 @@ export function QuickAddForm() {
         />
         <button
           className="w-full rounded-3xl bg-teal-700 px-5 py-5 text-lg font-bold text-white shadow-sm transition hover:bg-teal-800 disabled:cursor-not-allowed disabled:bg-slate-400"
-          disabled={isLoading}
+          disabled={!word.trim()}
           type="submit"
         >
-          {isLoading ? "Adding..." : "Add word"}
+          Add word
         </button>
       </form>
 
-      {error ? <p className="rounded-2xl bg-red-50 p-4 text-sm font-semibold text-red-700">{error}</p> : null}
-
-      {savedWord ? (
-        <div className="rounded-3xl border border-emerald-100 bg-emerald-50 p-4 text-center">
-          <p className="text-sm font-semibold text-emerald-700">Saved {savedWord}</p>
-          <button className="mt-3 rounded-2xl bg-emerald-700 px-4 py-3 text-sm font-bold text-white" type="button" onClick={addAnother}>
-            Add another
-          </button>
+      {pendingWords.length ? (
+        <div className="flex flex-col gap-2">
+          {pendingWords.map((pendingWord) => (
+            <div key={pendingWord.id} className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
+              <div className="flex items-center justify-between gap-3">
+                <p className="min-w-0 truncate text-base font-bold text-slate-950">{pendingWord.word}</p>
+                <span className={`whitespace-nowrap rounded-full px-3 py-1 text-xs font-bold ${statusClass(pendingWord.status)}`}>
+                  {statusLabel(pendingWord.status)}
+                </span>
+              </div>
+              {pendingWord.status === "failed" ? (
+                <div className="mt-2 flex items-center justify-between gap-3">
+                  <p className="text-xs font-semibold text-red-700">{pendingWord.message}</p>
+                  <button
+                    className="rounded-xl bg-red-600 px-3 py-2 text-xs font-bold text-white"
+                    type="button"
+                    onClick={() => {
+                      updatePendingWord(pendingWord.id, "generating", "Generating...");
+                      void submitWord(pendingWord.id, pendingWord.word);
+                    }}
+                  >
+                    Retry
+                  </button>
+                </div>
+              ) : null}
+            </div>
+          ))}
         </div>
       ) : null}
 

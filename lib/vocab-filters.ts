@@ -1,9 +1,8 @@
 import type { VocabItem } from "@/lib/types";
 
-export type DateFilterValue = "today" | "week" | "month" | "custom" | "all";
+export type DateFilterValue = "today" | "week" | "month" | "all" | "starred";
 
 type FilterOptions = {
-  customDate?: string;
   dateFilter: DateFilterValue;
   query?: string;
 };
@@ -30,8 +29,9 @@ function isThisWeek(date: Date, now: Date) {
   return date >= weekStart && date < weekEnd;
 }
 
-function matchesDateFilter(item: VocabItem, dateFilter: DateFilterValue, customDate?: string) {
+function matchesDateFilter(item: VocabItem, dateFilter: DateFilterValue) {
   if (dateFilter === "all") return true;
+  if (dateFilter === "starred") return item.is_starred;
 
   const createdAt = new Date(item.created_at);
   const now = new Date();
@@ -48,9 +48,7 @@ function matchesDateFilter(item: VocabItem, dateFilter: DateFilterValue, customD
     return createdAt.getFullYear() === now.getFullYear() && createdAt.getMonth() === now.getMonth();
   }
 
-  if (!customDate) return true;
-
-  return isSameDay(createdAt, new Date(`${customDate}T00:00:00`));
+  return true;
 }
 
 function matchesSearch(item: VocabItem, query?: string) {
@@ -63,5 +61,5 @@ function matchesSearch(item: VocabItem, query?: string) {
 }
 
 export function filterVocabItems(items: VocabItem[], options: FilterOptions) {
-  return items.filter((item) => matchesDateFilter(item, options.dateFilter, options.customDate) && matchesSearch(item, options.query));
+  return items.filter((item) => matchesDateFilter(item, options.dateFilter) && matchesSearch(item, options.query));
 }

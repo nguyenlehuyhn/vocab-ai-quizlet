@@ -8,30 +8,36 @@ export type Database = {
           id: string;
           user_id: string;
           word: string;
+          normalized_word: string;
           vietnamese_meaning: string | null;
           english_example: string | null;
           quizlet_term: string | null;
           quizlet_definition: string | null;
+          is_starred: boolean;
           created_at: string;
         };
         Insert: {
           id?: string;
           user_id: string;
           word: string;
+          normalized_word: string;
           vietnamese_meaning?: string | null;
           english_example?: string | null;
           quizlet_term?: string | null;
           quizlet_definition?: string | null;
+          is_starred?: boolean;
           created_at?: string;
         };
         Update: {
           id?: string;
           user_id?: string;
           word?: string;
+          normalized_word?: string;
           vietnamese_meaning?: string | null;
           english_example?: string | null;
           quizlet_term?: string | null;
           quizlet_definition?: string | null;
+          is_starred?: boolean;
           created_at?: string;
         };
         Relationships: [

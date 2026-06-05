@@ -8,11 +8,10 @@ import type { VocabItem } from "@/lib/types";
 
 export function ExportPanel({ items }: { items: VocabItem[] }) {
   const [dateFilter, setDateFilter] = useState<DateFilterValue>("today");
-  const [customDate, setCustomDate] = useState("");
 
   const filteredItems = useMemo(
-    () => filterVocabItems(items, { dateFilter, customDate }),
-    [customDate, dateFilter, items]
+    () => filterVocabItems(items, { dateFilter }),
+    [dateFilter, items]
   );
 
   const exportText = filteredItems
@@ -31,9 +30,7 @@ export function ExportPanel({ items }: { items: VocabItem[] }) {
 
       <div className="mb-4">
         <DateFilterControls
-          customDate={customDate}
           dateFilter={dateFilter}
-          onCustomDateChange={setCustomDate}
           onDateFilterChange={setDateFilter}
         />
       </div>

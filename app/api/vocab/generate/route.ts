@@ -36,6 +36,14 @@ const responseFormat = {
   }
 };
 
+function normalizeWord(word: string) {
+  return word.trim().toLowerCase();
+}
+
+function errorResponse(message: string, status = 500) {
+  return NextResponse.json({ status: "error", message, error: message }, { status });
+}
+
 export async function POST(request: Request) {
   const supabase = createRouteHandlerClient();
   const {
@@ -43,19 +51,45 @@ export async function POST(request: Request) {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return NextResponse.json({ error: "Please sign in first." }, { status: 401 });
+    return errorResponse("Please sign in first.", 401);
   }
 
   const body = await request.json().catch(() => null);
   const parsed = requestSchema.safeParse(body);
 
   if (!parsed.success) {
-    return NextResponse.json({ error: "Enter one English word or phrase." }, { status: 400 });
+    return errorResponse("Enter one English word or phrase.", 400);
+  }
+
+  const normalizedWord = normalizeWord(parsed.data.word);
+  const { data: existingItem, error: duplicateCheckError } = await supabase
+    .from("vocab_items")
+    .select("id, word")
+    .eq("user_id", user.id)
+    .eq("normalized_word", normalizedWord)
+    .maybeSingle();
+
+  if (duplicateCheckError) {
+    return errorResponse("Could not check for duplicates.");
+  }
+
+  if (existingItem) {
+    return NextResponse.json({
+      status: "duplicate",
+      message: "This word already exists.",
+      item: existingItem
+    });
   }
 
   const todayStart = new Date();
   todayStart.setHours(0, 0, 0, 0);
-  const adminSupabase = createAdminClient();
+  let adminSupabase: ReturnType<typeof createAdminClient>;
+
+  try {
+    adminSupabase = createAdminClient();
+  } catch {
+    return errorResponse("Missing server environment variables.");
+  }
 
   const { count, error: countError } = await adminSupabase
     .from("vocab_generation_logs")
@@ -64,15 +98,15 @@ export async function POST(request: Request) {
     .gte("created_at", todayStart.toISOString());
 
   if (countError) {
-    return NextResponse.json({ error: "Could not check today's limit." }, { status: 500 });
+    return errorResponse("Could not check today's limit.");
   }
 
   if ((count ?? 0) >= 30) {
-    return NextResponse.json({ error: "Daily limit reached. You can add 30 words per day." }, { status: 429 });
+    return errorResponse("Daily limit reached. You can add 30 words per day.", 429);
   }
 
   if (!process.env.OPENAI_API_KEY) {
-    return NextResponse.json({ error: "Missing OPENAI_API_KEY on the server." }, { status: 500 });
+    return errorResponse("Missing OPENAI_API_KEY on the server.");
   }
 
   const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -101,6 +135,7 @@ export async function POST(request: Request) {
       .insert({
         user_id: user.id,
         word: generated.word,
+        normalized_word: normalizedWord,
         vietnamese_meaning: generated.vietnamese_meaning,
         english_example: generated.english_example,
         quizlet_term: generated.quizlet_term,
@@ -110,17 +145,24 @@ export async function POST(request: Request) {
       .single();
 
     if (insertError) {
-      return NextResponse.json({ error: "Could not save this word." }, { status: 500 });
+      if (insertError.code === "23505") {
+        return NextResponse.json({
+          status: "duplicate",
+          message: "This word already exists."
+        });
+      }
+
+      return errorResponse("Could not save this word.");
     }
 
     const { error: logError } = await adminSupabase.from("vocab_generation_logs").insert({ user_id: user.id });
 
     if (logError) {
-      return NextResponse.json({ error: "Could not record today's usage." }, { status: 500 });
+      return errorResponse("Could not record today's usage.");
     }
 
-    return NextResponse.json({ item });
+    return NextResponse.json({ status: "success", item });
   } catch {
-    return NextResponse.json({ error: "AI generation failed. Please try again." }, { status: 500 });
+    return errorResponse("AI generation failed. Please try again.");
   }
 }

@@ -33,8 +33,13 @@ export function AddWordForm() {
     const payload = await response.json();
     setIsLoading(false);
 
-    if (!response.ok) {
-      setError(payload.error ?? "Something went wrong. Please try again.");
+    if (payload.status === "duplicate") {
+      setSuccess("Already exists.");
+      return;
+    }
+
+    if (!response.ok || payload.status !== "success") {
+      setError(payload.message ?? payload.error ?? "Something went wrong. Please try again.");
       return;
     }
 
