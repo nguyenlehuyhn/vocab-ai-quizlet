@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
 import { z } from "zod";
+import { buildQuizletDefinition } from "@/lib/quizlet-format";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createRouteHandlerClient } from "@/lib/supabase/route-handler";
 
@@ -118,7 +119,7 @@ export async function POST(request: Request) {
         {
           role: "system",
           content:
-            "For the given English word or phrase, return JSON only. Vietnamese meaning should be concise and natural. English example should be simple, useful, and natural. quizlet_term should be the English word. quizlet_definition should include Vietnamese meaning and the English example."
+            "For the given English word or phrase, return JSON only. Vietnamese meaning should be concise and natural. English example should be simple, useful, and natural. quizlet_term should be exactly the English word or phrase. quizlet_definition must never repeat the English word or phrase. quizlet_definition should contain only the Vietnamese meaning, then '. Example: ', then the English example."
         },
         {
           role: "user",
@@ -139,7 +140,7 @@ export async function POST(request: Request) {
         vietnamese_meaning: generated.vietnamese_meaning,
         english_example: generated.english_example,
         quizlet_term: generated.quizlet_term,
-        quizlet_definition: generated.quizlet_definition
+        quizlet_definition: buildQuizletDefinition(generated.vietnamese_meaning, generated.english_example)
       })
       .select()
       .single();

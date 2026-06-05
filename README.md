@@ -116,4 +116,11 @@ Go to `/app/export` after saving words. Choose Today, This week, This month, All
 term<TAB>definition
 ```
 
+The term is the English front side. The definition does not repeat the English word; it contains only the Vietnamese meaning and English example:
+
+```text
+hello	xin chào. Example: Hello! How are you today.
+success	thành công. Example: She worked hard and achieved great success.
+```
+
 Use the copy button and paste the text into Quizlet import.

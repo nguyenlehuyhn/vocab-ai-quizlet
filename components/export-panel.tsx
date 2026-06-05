@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { CopyExportButton } from "@/components/copy-export-button";
 import { DateFilterControls } from "@/components/filter-controls";
+import { buildQuizletDefinition } from "@/lib/quizlet-format";
 import { filterVocabItems, type DateFilterValue } from "@/lib/vocab-filters";
 import type { VocabItem } from "@/lib/types";
 
@@ -15,7 +16,7 @@ export function ExportPanel({ items }: { items: VocabItem[] }) {
   );
 
   const exportText = filteredItems
-    .map((item) => `${item.quizlet_term ?? item.word}\t${item.quizlet_definition ?? item.vietnamese_meaning ?? ""}`)
+    .map((item) => `${item.quizlet_term ?? item.word}\t${buildQuizletDefinition(item.vietnamese_meaning, item.english_example)}`)
     .join("\n");
 
   return (
