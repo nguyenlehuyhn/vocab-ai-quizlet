@@ -1,6 +1,6 @@
 # Vocab AI Quizlet
 
-Mobile-first vocabulary web app for English learners. Users sign in with Google, generate Vietnamese meanings and English examples with AI, save vocabulary to Supabase, and copy Quizlet import text.
+Mobile-first vocabulary web app for English learners. Users sign in with Google, generate Vietnamese meanings and English examples with AI, save vocabulary to Supabase, browse saved words, and copy Quizlet import text.
 
 ## Tech Stack
 
@@ -44,6 +44,22 @@ Mobile-first vocabulary web app for English learners. Users sign in with Google,
 
 7. Open `http://localhost:3000`.
 
+## App Pages
+
+- `/app` is the vocabulary dashboard. It shows saved words in a spreadsheet-style table with search and date filters.
+- `/app/quick-add` is a focused add-only page for fast phone usage.
+- `/app/export` exports filtered words in Quizlet import format.
+- `/app/settings` shows account settings and sign out.
+
+## iPhone Home Screen Quick Add
+
+For a fast daily capture flow:
+
+1. Open `/app/quick-add` in Safari on your iPhone.
+2. Tap Share.
+3. Tap Add to Home Screen.
+4. Use that home screen shortcut whenever you want to add a word quickly.
+
 ## Environment Variables
 
 ```text
@@ -73,7 +89,7 @@ The migration creates `vocab_items`, enables Row Level Security, and adds polici
 
 ## Quizlet Export
 
-Go to `/app/export` after saving words. The page shows:
+Go to `/app/export` after saving words. Choose a date filter, then copy the generated text:
 
 ```text
 term<TAB>definition
