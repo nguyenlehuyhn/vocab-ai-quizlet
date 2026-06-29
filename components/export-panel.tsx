@@ -41,6 +41,21 @@ export function ExportPanel({ items }: { items: VocabItem[] }) {
         readOnly
         value={exportText || "No words match this filter."}
       />
+
+      {filteredItems.length ? (
+        <div className="mt-5 grid gap-3">
+          <h2 className="text-sm font-bold text-slate-700">Preview</h2>
+          {filteredItems.slice(0, 8).map((item) => (
+            <article key={item.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+              <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                <p className="text-base font-bold text-slate-950">{item.word}</p>
+                <p className="text-sm font-semibold text-slate-500">{item.pronunciation || "-"}</p>
+              </div>
+              <p className="mt-2 text-sm text-slate-700">{buildQuizletDefinition(item.vietnamese_meaning, item.english_example)}</p>
+            </article>
+          ))}
+        </div>
+      ) : null}
     </section>
   );
 }

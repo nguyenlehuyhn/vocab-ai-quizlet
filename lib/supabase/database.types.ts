@@ -9,6 +9,7 @@ export type Database = {
           user_id: string;
           word: string;
           normalized_word: string;
+          pronunciation: string | null;
           vietnamese_meaning: string | null;
           english_example: string | null;
           quizlet_term: string | null;
@@ -21,6 +22,7 @@ export type Database = {
           user_id: string;
           word: string;
           normalized_word: string;
+          pronunciation?: string | null;
           vietnamese_meaning?: string | null;
           english_example?: string | null;
           quizlet_term?: string | null;
@@ -33,6 +35,7 @@ export type Database = {
           user_id?: string;
           word?: string;
           normalized_word?: string;
+          pronunciation?: string | null;
           vietnamese_meaning?: string | null;
           english_example?: string | null;
           quizlet_term?: string | null;

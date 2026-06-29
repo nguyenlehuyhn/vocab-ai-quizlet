@@ -57,11 +57,14 @@ The dashboard supports:
 
 - Search across English word, Vietnamese meaning, and English example.
 - Simple filters: Today, This week, This month, All, and Starred.
+- Pronunciation in IPA style when available.
 - Star action for marking important words.
 - Delete action for removing words after confirmation.
 - A horizontally scrollable table on small screens.
 
 Duplicate prevention is enforced per user. Words are normalized by trimming spaces and comparing case-insensitively, so `hello`, `Hello`, and ` HELLO ` count as the same word.
+
+Deleted words can be added again because dashboard deletion performs a verified hard delete through the server API before the word is considered gone.
 
 ## iPhone Home Screen Quick Add
 
@@ -107,6 +110,8 @@ The second migration adds duplicate prevention and starred words:
 - `is_starred` stores starred status.
 - A unique index on `user_id` and `normalized_word` prevents future duplicates.
 - Existing duplicates are cleaned by keeping the oldest row for each user and normalized word before creating the unique index.
+
+The third migration adds `pronunciation`, used for IPA-style pronunciation such as `/əˈfɪlieɪt/`. Existing rows without pronunciation display `-`.
 
 ## Quizlet Export
 

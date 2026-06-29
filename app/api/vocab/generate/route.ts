@@ -13,6 +13,7 @@ const requestSchema = z.object({
 
 const generatedSchema = z.object({
   word: z.string(),
+  pronunciation: z.string(),
   vietnamese_meaning: z.string(),
   english_example: z.string(),
   quizlet_term: z.string(),
@@ -26,9 +27,10 @@ const responseFormat = {
   schema: {
     type: "object",
     additionalProperties: false,
-    required: ["word", "vietnamese_meaning", "english_example", "quizlet_term", "quizlet_definition"],
+    required: ["word", "pronunciation", "vietnamese_meaning", "english_example", "quizlet_term", "quizlet_definition"],
     properties: {
       word: { type: "string" },
+      pronunciation: { type: "string" },
       vietnamese_meaning: { type: "string" },
       english_example: { type: "string" },
       quizlet_term: { type: "string" },
@@ -119,7 +121,7 @@ export async function POST(request: Request) {
         {
           role: "system",
           content:
-            "For the given English word or phrase, return JSON only. Vietnamese meaning should be concise and natural. English example should be simple, useful, and natural. quizlet_term should be exactly the English word or phrase. quizlet_definition must never repeat the English word or phrase. quizlet_definition should contain only the Vietnamese meaning, then '. Example: ', then the English example."
+            "For the given English word or phrase, return JSON only. Vietnamese meaning should be concise and natural. English example should be simple, useful, and natural. pronunciation should be IPA style when possible, wrapped in slashes, such as /əˈfɪlieɪt/. quizlet_term should be exactly the English word or phrase. quizlet_definition must never repeat the English word or phrase. quizlet_definition should contain only the Vietnamese meaning, then '. Example: ', then the English example."
         },
         {
           role: "user",
@@ -137,6 +139,7 @@ export async function POST(request: Request) {
         user_id: user.id,
         word: generated.word,
         normalized_word: normalizedWord,
+        pronunciation: generated.pronunciation,
         vietnamese_meaning: generated.vietnamese_meaning,
         english_example: generated.english_example,
         quizlet_term: generated.quizlet_term,
