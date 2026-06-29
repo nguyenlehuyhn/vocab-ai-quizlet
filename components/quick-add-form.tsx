@@ -12,6 +12,19 @@ type PendingWord = {
   message: string;
 };
 
+type ApiPayload = {
+  status?: "success" | "duplicate" | "error";
+  message?: string;
+  error?: string;
+  details?: {
+    code?: string;
+    details?: string;
+    hint?: string;
+    message?: string;
+    name?: string;
+  };
+};
+
 function statusLabel(status: PendingStatus) {
   if (status === "generating") return "Generating...";
   if (status === "saved") return "Saved";
@@ -51,18 +64,32 @@ export function QuickAddForm() {
   }
 
   async function submitWord(id: string, submittedWord: string) {
+    console.log("[quick add] submitting word", submittedWord);
+
     const response = await fetch("/api/vocab/generate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ word: submittedWord })
-    }).catch(() => null);
+    }).catch((error) => {
+      console.error("[quick add] request failed", error);
+      return null;
+    });
 
     if (!response) {
       updatePendingWord(id, "failed", "Network error.");
       return;
     }
 
-    const payload = await response.json().catch(() => null);
+    const payload = (await response.json().catch((error) => {
+      console.error("[quick add] failed to parse API response", error);
+      return null;
+    })) as ApiPayload | null;
+
+    console.log("[quick add] full API response", {
+      ok: response.ok,
+      status: response.status,
+      payload
+    });
 
     if (payload?.status === "success") {
       updatePendingWord(id, "saved", "Saved");
@@ -74,7 +101,20 @@ export function QuickAddForm() {
       return;
     }
 
-    updatePendingWord(id, "failed", payload?.message ?? payload?.error ?? "Failed");
+    if (payload?.details) {
+      console.error("[quick add] full Supabase/API error details", payload.details);
+    }
+
+    updatePendingWord(id, "failed", getErrorMessage(payload, response.status));
+  }
+
+  function getErrorMessage(payload: ApiPayload | null, status: number) {
+    return (
+      payload?.details?.message ??
+      payload?.message ??
+      payload?.error ??
+      `Request failed with status ${status}`
+    );
   }
 
   function updatePendingWord(id: string, status: PendingStatus, message: string) {

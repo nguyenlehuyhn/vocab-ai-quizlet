@@ -43,8 +43,16 @@ function normalizeWord(word: string) {
   return word.trim().toLowerCase();
 }
 
-function errorResponse(message: string, status = 500) {
-  return NextResponse.json({ status: "error", message, error: message }, { status });
+type ErrorDetails = {
+  code?: string;
+  details?: string;
+  hint?: string;
+  message?: string;
+  name?: string;
+};
+
+function errorResponse(message: string, status = 500, details?: ErrorDetails) {
+  return NextResponse.json({ status: "error", message, error: message, details }, { status });
 }
 
 export async function POST(request: Request) {
@@ -65,6 +73,12 @@ export async function POST(request: Request) {
   }
 
   const normalizedWord = normalizeWord(parsed.data.word);
+  console.log("[vocab generate] word being submitted", {
+    word: parsed.data.word,
+    normalizedWord,
+    userId: user.id
+  });
+
   const { data: existingItem, error: duplicateCheckError } = await supabase
     .from("vocab_items")
     .select("id, word")
@@ -72,8 +86,14 @@ export async function POST(request: Request) {
     .eq("normalized_word", normalizedWord)
     .maybeSingle();
 
+  console.log("[vocab generate] duplicate check result", {
+    existingItem,
+    duplicateCheckError
+  });
+
   if (duplicateCheckError) {
-    return errorResponse("Could not check for duplicates.");
+    console.error("[vocab generate] duplicate check error", duplicateCheckError);
+    return errorResponse(duplicateCheckError.message, 500, duplicateCheckError);
   }
 
   if (existingItem) {
@@ -132,31 +152,42 @@ export async function POST(request: Request) {
     });
 
     const generated = generatedSchema.parse(JSON.parse(response.output_text));
+    const insertPayload = {
+      user_id: user.id,
+      word: generated.word,
+      normalized_word: normalizedWord,
+      pronunciation: generated.pronunciation,
+      vietnamese_meaning: generated.vietnamese_meaning,
+      english_example: generated.english_example,
+      quizlet_term: generated.quizlet_term,
+      quizlet_definition: buildQuizletDefinition(generated.vietnamese_meaning, generated.english_example)
+    };
+
+    console.log("[vocab generate] insert payload", insertPayload);
 
     const { data: item, error: insertError } = await supabase
       .from("vocab_items")
-      .insert({
-        user_id: user.id,
-        word: generated.word,
-        normalized_word: normalizedWord,
-        pronunciation: generated.pronunciation,
-        vietnamese_meaning: generated.vietnamese_meaning,
-        english_example: generated.english_example,
-        quizlet_term: generated.quizlet_term,
-        quizlet_definition: buildQuizletDefinition(generated.vietnamese_meaning, generated.english_example)
-      })
+      .insert(insertPayload)
       .select()
       .single();
 
+    console.log("[vocab generate] insert response", {
+      item,
+      insertError
+    });
+
     if (insertError) {
+      console.error("[vocab generate] full Supabase insert error", insertError);
+
       if (insertError.code === "23505") {
         return NextResponse.json({
           status: "duplicate",
-          message: "This word already exists."
+          message: "This word already exists.",
+          details: insertError
         });
       }
 
-      return errorResponse("Could not save this word.");
+      return errorResponse(insertError.message, 500, insertError);
     }
 
     const { error: logError } = await adminSupabase.from("vocab_generation_logs").insert({ user_id: user.id });
