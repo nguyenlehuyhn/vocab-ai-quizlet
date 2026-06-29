@@ -3,12 +3,12 @@
 import { useMemo, useState } from "react";
 import { CopyExportButton } from "@/components/copy-export-button";
 import { DateFilterControls } from "@/components/filter-controls";
-import { buildQuizletDefinition } from "@/lib/quizlet-format";
+import { buildQuizletExportDefinition } from "@/lib/quizlet-format";
 import { filterVocabItems, type DateFilterValue } from "@/lib/vocab-filters";
 import type { VocabItem } from "@/lib/types";
 
 export function ExportPanel({ items }: { items: VocabItem[] }) {
-  const [dateFilter, setDateFilter] = useState<DateFilterValue>("today");
+  const [dateFilter, setDateFilter] = useState<DateFilterValue>("all");
 
   const filteredItems = useMemo(
     () => filterVocabItems(items, { dateFilter }),
@@ -16,7 +16,7 @@ export function ExportPanel({ items }: { items: VocabItem[] }) {
   );
 
   const exportText = filteredItems
-    .map((item) => `${item.quizlet_term ?? item.word}\t${buildQuizletDefinition(item.vietnamese_meaning, item.english_example)}`)
+    .map((item) => `${item.quizlet_term ?? item.word}\t${buildQuizletExportDefinition(item.pronunciation, item.vietnamese_meaning, item.english_example)}`)
     .join("\n");
 
   return (
@@ -51,7 +51,9 @@ export function ExportPanel({ items }: { items: VocabItem[] }) {
                 <p className="text-base font-bold text-slate-950">{item.word}</p>
                 <p className="text-sm font-semibold text-slate-500">{item.pronunciation || "-"}</p>
               </div>
-              <p className="mt-2 text-sm text-slate-700">{buildQuizletDefinition(item.vietnamese_meaning, item.english_example)}</p>
+              <p className="mt-2 text-sm text-slate-700">
+                {buildQuizletExportDefinition(item.pronunciation, item.vietnamese_meaning, item.english_example)}
+              </p>
             </article>
           ))}
         </div>

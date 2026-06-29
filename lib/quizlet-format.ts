@@ -16,3 +16,13 @@ export function buildQuizletDefinition(vietnameseMeaning?: string | null, englis
 
   return "";
 }
+
+export function buildQuizletExportDefinition(
+  pronunciation?: string | null,
+  vietnameseMeaning?: string | null,
+  englishExample?: string | null
+) {
+  return [pronunciation?.trim(), vietnameseMeaning?.trim(), englishExample?.trim()]
+    .filter(Boolean)
+    .join(" | ");
+}

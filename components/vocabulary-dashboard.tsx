@@ -9,7 +9,7 @@ import type { VocabItem } from "@/lib/types";
 export function VocabularyDashboard({ items }: { items: VocabItem[] }) {
   const [localItems, setLocalItems] = useState(items);
   const [query, setQuery] = useState("");
-  const [dateFilter, setDateFilter] = useState<DateFilterValue>("today");
+  const [dateFilter, setDateFilter] = useState<DateFilterValue>("all");
   const [actionError, setActionError] = useState("");
 
   const filteredItems = useMemo(
@@ -49,6 +49,52 @@ export function VocabularyDashboard({ items }: { items: VocabItem[] }) {
     }
   }
 
+  function speakWord(wordToSpeak: string) {
+    if (!("speechSynthesis" in window) || !("SpeechSynthesisUtterance" in window)) {
+      setActionError("Speech is not supported in this browser.");
+      return;
+    }
+
+    const utterance = new SpeechSynthesisUtterance(wordToSpeak);
+    const englishVoice = window.speechSynthesis
+      .getVoices()
+      .find((voice) => voice.lang.toLowerCase().startsWith("en"));
+
+    if (englishVoice) {
+      utterance.voice = englishVoice;
+      utterance.lang = englishVoice.lang;
+    } else {
+      utterance.lang = "en-US";
+    }
+
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(utterance);
+  }
+
+  function PronunciationCell({ item }: { item: VocabItem }) {
+    return (
+      <div className="flex items-center gap-2 text-sm font-semibold text-slate-500">
+        <button
+          aria-label={`Pronounce ${item.word}`}
+          className="grid h-7 w-7 shrink-0 place-items-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-100"
+          type="button"
+          onClick={() => speakWord(item.word)}
+        >
+          <svg aria-hidden="true" className="h-4 w-4" fill="none" viewBox="0 0 24 24">
+            <path
+              d="M5 9v6h4l5 4V5L9 9H5Zm12.5-.5a5 5 0 0 1 0 7M19.5 6a8 8 0 0 1 0 12"
+              stroke="currentColor"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="1.8"
+            />
+          </svg>
+        </button>
+        <span>{item.pronunciation || "-"}</span>
+      </div>
+    );
+  }
+
   return (
     <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
       <div className="mb-5">
@@ -81,7 +127,9 @@ export function VocabularyDashboard({ items }: { items: VocabItem[] }) {
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <h2 className="truncate text-lg font-bold text-slate-950">{item.word}</h2>
-                <p className="mt-1 text-sm font-semibold text-slate-500">{item.pronunciation || "-"}</p>
+                <div className="mt-1">
+                  <PronunciationCell item={item} />
+                </div>
               </div>
               <div className="flex shrink-0 gap-2">
                 <button
@@ -173,7 +221,9 @@ export function VocabularyDashboard({ items }: { items: VocabItem[] }) {
                   </div>
                 </td>
                 <td className="border-r border-slate-200 px-3 py-3 font-bold text-slate-950">{item.word}</td>
-                <td className="border-r border-slate-200 px-3 py-3 text-sm font-semibold text-slate-500">{item.pronunciation || "-"}</td>
+                <td className="border-r border-slate-200 px-3 py-3">
+                  <PronunciationCell item={item} />
+                </td>
                 <td className="border-r border-slate-200 px-3 py-3 text-teal-800">{item.vietnamese_meaning}</td>
                 <td className="px-3 py-3 text-slate-700">{item.english_example}</td>
               </tr>

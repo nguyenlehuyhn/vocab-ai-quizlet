@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { FormEvent, useRef, useState } from "react";
 
-type PendingStatus = "generating" | "saved" | "duplicate" | "failed";
+type PendingStatus = "saved" | "duplicate" | "failed";
 
 type PendingWord = {
   id: string;
@@ -26,7 +26,6 @@ type ApiPayload = {
 };
 
 function statusLabel(status: PendingStatus) {
-  if (status === "generating") return "Generating...";
   if (status === "saved") return "Saved";
   if (status === "duplicate") return "Already exists";
   return "Failed";
@@ -35,8 +34,7 @@ function statusLabel(status: PendingStatus) {
 function statusClass(status: PendingStatus) {
   if (status === "saved") return "bg-emerald-50 text-emerald-700";
   if (status === "duplicate") return "bg-amber-50 text-amber-700";
-  if (status === "failed") return "bg-red-50 text-red-700";
-  return "bg-slate-100 text-slate-600";
+  return "bg-red-50 text-red-700";
 }
 
 export function QuickAddForm() {
@@ -55,7 +53,7 @@ export function QuickAddForm() {
     const id = crypto.randomUUID();
     setWord("");
     setPendingWords((currentWords) => [
-      { id, word: trimmed, status: "generating", message: "Generating..." },
+      { id, word: trimmed, status: "saved", message: "Saved" },
       ...currentWords
     ]);
     inputRef.current?.focus();
@@ -162,7 +160,7 @@ export function QuickAddForm() {
                     className="rounded-xl bg-red-600 px-3 py-2 text-xs font-bold text-white"
                     type="button"
                     onClick={() => {
-                      updatePendingWord(pendingWord.id, "generating", "Generating...");
+                      updatePendingWord(pendingWord.id, "saved", "Saved");
                       void submitWord(pendingWord.id, pendingWord.word);
                     }}
                   >
