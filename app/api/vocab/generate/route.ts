@@ -7,6 +7,8 @@ import { createRouteHandlerClient } from "@/lib/supabase/route-handler";
 
 export const runtime = "nodejs";
 
+const DAILY_LIMIT = 100;
+
 const requestSchema = z.object({
   word: z.string().trim().min(1).max(80)
 });
@@ -124,8 +126,8 @@ export async function POST(request: Request) {
     return errorResponse("Could not check today's limit.");
   }
 
-  if ((count ?? 0) >= 30) {
-    return errorResponse("Daily limit reached. You can add 30 words per day.", 429);
+  if ((count ?? 0) >= DAILY_LIMIT) {
+    return errorResponse(`Daily limit reached. You can add ${DAILY_LIMIT} words per day.`, 429);
   }
 
   if (!process.env.OPENAI_API_KEY) {
